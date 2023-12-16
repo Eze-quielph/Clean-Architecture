@@ -4,19 +4,35 @@ import {
   RegisterUserDto,
   UserEntity,
 } from "../../domain";
+import { User } from "../../data/mongodb/models/user.model";
+import { Bcrypt } from "../../config";
+import { UserMapper } from "../mappers/user.mapper";
+
+type compare = (password: string, hash: string) => boolean;
+type hash = (password: string) => string;
 
 export class AuthDatasourceImpl implements AuthDatasource {
+  constructor(
+    private readonly compare: compare = Bcrypt.compare,
+    private readonly hash: hash = Bcrypt.hash
+  ) {}
+
   async register(registerUserDto: RegisterUserDto): Promise<UserEntity> {
     const { name, email, password } = registerUserDto;
 
     try {
-      // I. Verify if email exists
+      const exist = await User.findOne({ email });
+      if (exist) throw CustomError.badRequest("Email already exists");
 
-      // II. Password hash
+      const user = await User.create({
+        name,
+        email,
+        password: this.hash(password),
+      });
 
-      // III. Create user
+      await user.save();
 
-      return new UserEntity("1", name, email, password, ["ADMIN_ROLE"]);
+      return UserMapper.userEntityFromObject(user);
     } catch (error) {
       if (error instanceof CustomError) {
         throw error;
