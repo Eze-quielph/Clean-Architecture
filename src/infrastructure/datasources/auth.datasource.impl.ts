@@ -17,6 +17,21 @@ export class AuthDatasourceImpl implements AuthDatasource {
     private readonly hash: hash = Bcrypt.hash
   ) {}
 
+  login(email: string, password: string): Promise<UserEntity> {
+    try {
+      return User.findOne({ email }).then((user) => {
+        if (!user) throw CustomError.notFound("User not found");
+
+        if (!this.compare(password, user.password))
+          throw CustomError.badRequest("Invalid password");
+
+        return UserMapper.userEntityFromObject(user);
+      });
+    } catch (err) {
+      throw CustomError.internal("Internal error");
+    }
+  }
+
   async register(registerUserDto: RegisterUserDto): Promise<UserEntity> {
     const { name, email, password } = registerUserDto;
 
