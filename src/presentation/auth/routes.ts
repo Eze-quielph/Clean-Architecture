@@ -4,6 +4,7 @@ import {
   AuthDatasourceImpl,
   AuthRepositoriesIimpl,
 } from "../../infrastructure/index";
+import { AuthMiddleware } from "../middlewares";
 
 export class AuthRoutes {
   static get routes(): Router {
@@ -15,6 +16,7 @@ export class AuthRoutes {
 
     router.post("/login", controller.loginUser);
     router.post("/register", controller.registerUser);
+    router.get("/", [AuthMiddleware.validateJwt], controller.getUsers);
 
     return router;
   }

@@ -1,5 +1,8 @@
 import { Request, Response } from "express";
 import { AuthRepository, CustomError, RegisterUserDto } from "../../domain";
+import { Jwt } from "../../config";
+import { User } from "../../data/mongodb";
+import { RegisterUser } from "../../domain/use-case";
 
 export class AuthController {
   //DI
@@ -18,13 +21,27 @@ export class AuthController {
 
     if (error) return res.status(400).json({ error });
 
-    this.authRepositories
-      .register(registerUserDto!)
-      .then((user) => res.json(user))
-      .catch((error) => this.handleError(error, res));
+    if (!registerUserDto) throw CustomError.internal("Internal Server Error");
+    else {
+      new RegisterUser(this.authRepositories)
+        .execute(registerUserDto)
+        .then((userToken) => res.json(userToken))
+        .catch((error) => this.handleError(error, res));
+    }
   };
 
   loginUser = (req: Request, res: Response) => {
     res.json("Login");
+  };
+
+  getUsers = (req: Request, resp: Response) => {
+    User.find()
+      .then((users) =>
+        resp.json({
+          users,
+          user: req.body.user,
+        })
+      )
+      .catch((error) => this.handleError(error, resp));
   };
 }
